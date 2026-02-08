@@ -17,6 +17,7 @@ type Props = {
   title: string;
   empty: string;
   backendDown: string;
+  monitorId: string;
   labels: {
     status: string;
     lastCheck: string;
@@ -30,7 +31,7 @@ type Props = {
   };
 };
 
-export default function LogsClient({ title, empty, backendDown, labels }: Props) {
+export default function LogsClient({ title, empty, backendDown, labels, monitorId }: Props) {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
@@ -42,8 +43,8 @@ export default function LogsClient({ title, empty, backendDown, labels }: Props)
     async function fetchLogs() {
       try {
         const [logsResp, statusResp] = await Promise.all([
-          fetch(`${apiBase}/logs`),
-          fetch(`${apiBase}/status`)
+          fetch(`${apiBase}/logs/${monitorId}`),
+          fetch(`${apiBase}/status/${monitorId}`)
         ]);
         const resp = logsResp;
         if (!resp.ok) {
@@ -71,7 +72,7 @@ export default function LogsClient({ title, empty, backendDown, labels }: Props)
       mounted = false;
       window.clearInterval(id);
     };
-  }, []);
+  }, [apiBase, backendDown, monitorId]);
 
   return (
     <section className="card">

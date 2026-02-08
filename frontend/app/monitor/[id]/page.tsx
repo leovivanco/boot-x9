@@ -38,13 +38,17 @@ const messages = {
 } satisfies Record<Locale, object>;
 
 type PageProps = {
+  params: { id: string };
   searchParams?: { lang?: string };
 };
 
-export default function LogsPage({ searchParams }: PageProps) {
+import LogsClient from "../../logs/LogsClient";
+
+export default function MonitorPage({ params, searchParams }: PageProps) {
   const requested = (searchParams?.lang || "en") as Locale;
   const locale: Locale = requested === "pt-BR" ? "pt-BR" : "en";
   const t = messages[locale];
+  const monitorId = params.id;
 
   return (
     <main className="min-h-screen bg-hero-gradient">
@@ -79,6 +83,7 @@ export default function LogsPage({ searchParams }: PageProps) {
           title={t.logTitle}
           empty={t.empty}
           backendDown={t.backendDown}
+          monitorId={monitorId}
           labels={{
             status: t.status,
             lastCheck: t.lastCheck,
@@ -95,4 +100,3 @@ export default function LogsPage({ searchParams }: PageProps) {
     </main>
   );
 }
-import LogsClient from "./LogsClient";

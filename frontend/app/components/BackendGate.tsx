@@ -16,7 +16,7 @@ export default function BackendGate({ children, fallback }: Props) {
 
     async function check() {
       try {
-        const resp = await fetch(`${apiBase}/logs`);
+        const resp = await fetch(`${apiBase}/health`);
         if (!mounted) return;
         setReady(resp.ok);
       } catch {

@@ -1,15 +1,20 @@
 import os
 import threading
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+import uuid
+from datetime import datetime, timezone, timedelta
+from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from pydantic import BaseModel, constr, conint, field_validator
 
 from .crawler import check_page
+from .db import get_monitor_by_id, init_db, upsert_monitor
 from .notifier import send_email_smtp
+
+load_dotenv()
 
 
 class MonitorRequest(BaseModel):
@@ -38,37 +43,35 @@ app.add_middleware(
     allow_headers=["*"] ,
 )
 
-LOGS: List[Dict[str, Any]] = []
-CURRENT_MONITOR: Optional[MonitorRequest] = None
-MONITOR_STATE: Dict[str, Any] = {
-    "last_check": None,
-    "next_check": None,
-}
+LOGS: Dict[str, List[Dict[str, Any]]] = {}
+MONITOR_STATE: Dict[str, Dict[str, Any]] = {}
 
 
-def add_log(message: str, level: str = "info") -> None:
-    LOGS.append(
+def add_log(monitor_id: str, message: str, level: str = "info") -> None:
+    LOGS.setdefault(monitor_id, []).append(
         {
             "ts": datetime.now(timezone.utc).isoformat(),
             "level": level,
             "message": message,
         }
     )
-    if len(LOGS) > 500:
-        del LOGS[:100]
+    if len(LOGS[monitor_id]) > 500:
+        del LOGS[monitor_id][:100]
 
 
 def heartbeat_loop() -> None:
     while True:
-        add_log("heartbeat: crawler is alive")
+        for monitor_id in list(LOGS.keys()):
+            add_log(monitor_id, "heartbeat: crawler is alive")
         time.sleep(300)
 
 
-def run_check(req: MonitorRequest) -> None:
-    MONITOR_STATE["last_check"] = datetime.now(timezone.utc).isoformat()
+def run_check(monitor_id: str, req: MonitorRequest) -> None:
+    MONITOR_STATE.setdefault(monitor_id, {})
+    MONITOR_STATE[monitor_id]["last_check"] = datetime.now(timezone.utc).isoformat()
     found, detail = check_page(req.url, selector=None, text=req.match)
     if found:
-        add_log(f"match found for {req.url} ({detail})", "match")
+        add_log(monitor_id, f"match found for {req.url} ({detail})", "match")
         smtp_host = os.getenv("SMTP_HOST", "smtp.mail.yahoo.com")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
         smtp_user = os.getenv("SMTP_USER")
@@ -88,57 +91,101 @@ def run_check(req: MonitorRequest) -> None:
                     subject,
                     content,
                 )
-                add_log(f"email sent to {req.email_to}", "email")
+                add_log(monitor_id, f"email sent to {req.email_to}", "email")
             except Exception as exc:
-                add_log(f"email failed: {exc}", "error")
+                add_log(monitor_id, f"email failed: {exc}", "error")
         else:
-            add_log("email skipped: missing SMTP_USER/SMTP_PASS/EMAIL_FROM", "error")
+            add_log(monitor_id, "email skipped: missing SMTP_USER/SMTP_PASS/EMAIL_FROM", "error")
     else:
-        add_log(f"no match for {req.url} ({detail})")
+        add_log(monitor_id, f"no match for {req.url} ({detail})")
 
 
-def schedule_loop(req: MonitorRequest) -> None:
-    add_log(f"schedule started for {req.url} every {req.interval_hours}h")
+def schedule_loop(monitor_id: str, req: MonitorRequest) -> None:
+    add_log(monitor_id, f"schedule started for {req.url} every {req.interval_hours}h")
     while True:
-        MONITOR_STATE["next_check"] = (
+        MONITOR_STATE.setdefault(monitor_id, {})
+        MONITOR_STATE[monitor_id]["next_check"] = (
             datetime.now(timezone.utc) + timedelta(hours=req.interval_hours)
         ).isoformat()
         time.sleep(req.interval_hours * 3600)
-        run_check(req)
+        run_check(monitor_id, req)
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    init_db()
     thread = threading.Thread(target=heartbeat_loop, daemon=True)
     thread.start()
 
 
 @app.post("/monitor")
 async def create_monitor(req: MonitorRequest) -> Dict[str, Any]:
-    add_log(f"monitor created for {req.url}")
-    global CURRENT_MONITOR
-    CURRENT_MONITOR = req
-    run_check(req)
-    threading.Thread(target=schedule_loop, args=(req,), daemon=True).start()
-    return {"ok": True}
+    monitor_id = str(uuid.uuid4())
+    monitor_id, created = upsert_monitor(
+        monitor_id, req.url, req.match, req.interval_hours, req.email_to
+    )
+    add_log(monitor_id, f"monitor {'created' if created else 'reused'} for {req.url}")
+    run_check(monitor_id, req)
+    threading.Thread(target=schedule_loop, args=(monitor_id, req), daemon=True).start()
+
+    base_url = os.getenv("MONITOR_BASE_URL", "http://localhost:3000/monitor")
+    monitor_url = f"{base_url}/{monitor_id}"
+
+    smtp_host = os.getenv("SMTP_HOST", "smtp.mail.yahoo.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    email_from = os.getenv("EMAIL_FROM")
+    if smtp_user and smtp_pass and email_from:
+        subject = "Crawler X9 monitoring link"
+        content = f"Your monitor is ready: {monitor_url}"
+        try:
+            send_email_smtp(
+                smtp_host,
+                smtp_port,
+                smtp_user,
+                smtp_pass,
+                email_from,
+                req.email_to,
+                subject,
+                content,
+            )
+            add_log(monitor_id, f"monitor link sent to {req.email_to}", "email")
+        except Exception as exc:
+            add_log(monitor_id, f"monitor link email failed: {exc}", "error")
+    else:
+        add_log(
+            monitor_id,
+            "monitor link email skipped: missing SMTP_USER/SMTP_PASS/EMAIL_FROM",
+            "error",
+        )
+
+    return {"ok": True, "monitor_id": monitor_id, "monitor_url": monitor_url}
 
 
-@app.get("/logs")
-async def get_logs() -> List[Dict[str, Any]]:
-    return LOGS[-100:]
+@app.get("/logs/{monitor_id}")
+async def get_logs(monitor_id: str) -> List[Dict[str, Any]]:
+    return LOGS.get(monitor_id, [])[-100:]
 
 
-@app.get("/status")
-async def get_status() -> Dict[str, Any]:
-    if CURRENT_MONITOR is None:
+@app.get("/status/{monitor_id}")
+async def get_status(monitor_id: str) -> Dict[str, Any]:
+    monitor = get_monitor_by_id(monitor_id)
+    if monitor is None:
         return {"active": False}
 
+    state = MONITOR_STATE.get(monitor_id, {})
     return {
         "active": True,
-        "url": CURRENT_MONITOR.url,
-        "match": CURRENT_MONITOR.match,
-        "email_to": CURRENT_MONITOR.email_to,
-        "interval_hours": CURRENT_MONITOR.interval_hours,
-        "last_check": MONITOR_STATE.get("last_check"),
-        "next_check": MONITOR_STATE.get("next_check"),
+        "url": monitor["url"],
+        "match": monitor["match"],
+        "email_to": monitor["email_to"],
+        "interval_hours": monitor["interval_hours"],
+        "last_check": state.get("last_check"),
+        "next_check": state.get("next_check"),
     }
+
+
+@app.get("/health")
+async def health() -> Dict[str, Any]:
+    return {"ok": True}

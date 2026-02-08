@@ -38,11 +38,23 @@ export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
       email_message: String(formData.get("subject") || "")
     };
 
-    await fetch(`${apiBase}/monitor`, {
+    const resp = await fetch(`${apiBase}/monitor`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+
+    if (!resp.ok) {
+      setLoading(false);
+      return;
+    }
+
+    const data = (await resp.json()) as { monitor_id?: string };
+    const monitorId = data.monitor_id;
+    if (monitorId) {
+      window.location.href = `/monitor/${monitorId}?lang=${locale}`;
+      return;
+    }
 
     window.location.href = `/logs?lang=${locale}`;
   }

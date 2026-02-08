@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+backend/crawler.db
 
 node_modules/
 frontend/.next/
