@@ -73,8 +73,9 @@ type PageProps = {
   searchParams?: { lang?: string };
 };
 
-export default function Home({ searchParams }: PageProps) {
-  const requested = (searchParams?.lang || "en") as Locale;
+export default async function Home({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const requested = (params?.lang || "en") as Locale;
   const locale: Locale = requested === "pt-BR" ? "pt-BR" : "en";
   const t = messages[locale];
 

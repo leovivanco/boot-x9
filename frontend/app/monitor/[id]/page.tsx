@@ -44,8 +44,9 @@ type PageProps = {
 
 import LogsClient from "../../logs/LogsClient";
 
-export default function MonitorPage({ params, searchParams }: PageProps) {
-  const requested = (searchParams?.lang || "en") as Locale;
+export default async function MonitorPage({ params, searchParams }: PageProps) {
+  const search = await searchParams;
+  const requested = (search?.lang || "en") as Locale;
   const locale: Locale = requested === "pt-BR" ? "pt-BR" : "en";
   const t = messages[locale];
   const monitorId = params.id;

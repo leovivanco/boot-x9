@@ -1,8 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Source Sans 3", system-ui, sans-serif;
+
+  --color-ink: #0b0d12;
+  --color-fog: #f3f4f6;
+  --color-ember: #f97316;
+  --color-tide: #0f172a;
+  --color-mist: #e2e8f0;
+
+  --shadow-glow: 0 20px 60px rgba(249, 115, 22, 0.25);
+  --shadow-lift: 0 18px 40px rgba(15, 23, 42, 0.15);
+
+  --background-image-hero-gradient: radial-gradient(circle at top, rgba(249, 115, 22, 0.25), transparent 60%),
+    linear-gradient(120deg, #0f172a, #0b0d12);
+  --background-image-card-gradient: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(226, 232, 240, 0.85));
+}
+
+@import "tailwindcss";
 
 :root {
   color-scheme: light;

@@ -7,8 +7,5 @@
     "dev": "pnpm --filter frontend dev",
     "build": "pnpm --filter frontend build",
     "lint": "pnpm --filter frontend lint"
-  },
-  "devDependencies": {
-    "concurrently": "9.0.1"
   }
 }
