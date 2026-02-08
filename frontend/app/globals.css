@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-tide text-white antialiased font-body;
+}
+
+input, select, textarea {
+  @apply text-ink;
+}
+
+.form-field {
+  @apply flex flex-col gap-2;
+}
+
+.label {
+  @apply text-sm uppercase tracking-[0.18em] text-slate-300;
+}
+
+.input {
+  @apply w-full rounded-2xl border border-white/15 bg-white/90 px-4 py-3 text-sm shadow-sm transition focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/30;
+}
+
+.card {
+  @apply rounded-3xl bg-white/10 p-8 shadow-lift backdrop-blur;
+}
+
+.primary-btn {
+  @apply inline-flex items-center justify-center rounded-full bg-ember px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:-translate-y-0.5;
+}
+
+.secondary-chip {
+  @apply rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/70;
+}
