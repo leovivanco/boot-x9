@@ -3,12 +3,12 @@ import type { ReactNode } from "react";
 
 export const metadata = {
   title: "Crawler X9",
-  description: "Configure a simple web crawler alert"
+  description: "Create and monitor web crawler alerts."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
