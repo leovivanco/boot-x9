@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@9.12.1",
   "scripts": {
-    "dev": "pnpm exec concurrently \"pnpm --filter frontend dev\" \"./.venv/bin/python3 -m uvicorn backend.server:app --reload --port 8000\"",
+    "dev": "pnpm --filter frontend dev",
     "build": "pnpm --filter frontend build",
     "lint": "pnpm --filter frontend lint"
   },

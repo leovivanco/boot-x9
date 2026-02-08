@@ -23,11 +23,15 @@ const messages = {
       timeoutLabel: "Timeout",
       emailLabel: "Email de destino",
       emailPlaceholder: "voce@exemplo.com",
+      passwordLabel: "Senha de acesso",
+      passwordPlaceholder: "Defina uma senha",
       messageLabel: "Mensagem do email",
       messagePlaceholder: "Assunto do alerta",
       helper: "Envio inicial imediato e depois no intervalo selecionado.",
       submit: "Salvar monitoramento",
-      backendDown: "Backend não está rodando. Inicie o servidor para continuar."
+      backendDown: "Backend não está rodando. Inicie o servidor para continuar.",
+      invalidPassword: "Senha inválida. Verifique e tente novamente.",
+      submitError: "Não foi possível criar o monitor agora."
     },
     features: [
       { title: "Sem ruído", text: "Apenas alertas quando a string aparecer no HTML." },
@@ -47,11 +51,15 @@ const messages = {
       timeoutLabel: "Interval",
       emailLabel: "Recipient email",
       emailPlaceholder: "you@example.com",
+      passwordLabel: "Access password",
+      passwordPlaceholder: "Enter password",
       messageLabel: "Email message",
       messagePlaceholder: "Alert subject",
       helper: "We send immediately, then on your selected interval.",
       submit: "Save monitoring",
-      backendDown: "Backend is not running. Start the server to continue."
+      backendDown: "Backend is not running. Start the server to continue.",
+      invalidPassword: "Invalid password. Please try again.",
+      submitError: "Unable to create the monitor right now."
     },
     features: [
       { title: "Low noise", text: "Only alert when the string appears in the HTML." },

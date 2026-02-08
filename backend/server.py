@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, constr, conint, field_validator
@@ -23,6 +23,7 @@ class MonitorRequest(BaseModel):
     interval_hours: conint(ge=1, le=24)
     email_to: str
     email_message: str
+    access_password: constr(min_length=1)
 
     @field_validator("interval_hours")
     @classmethod
@@ -120,6 +121,9 @@ async def startup_event() -> None:
 
 @app.post("/monitor")
 async def create_monitor(req: MonitorRequest) -> Dict[str, Any]:
+    required_password = os.getenv("MONITOR_PASSWORD")
+    if required_password and req.access_password != required_password:
+        raise HTTPException(status_code=401, detail="invalid_password")
     monitor_id = str(uuid.uuid4())
     monitor_id, created = upsert_monitor(
         monitor_id, req.url, req.match, req.interval_hours, req.email_to

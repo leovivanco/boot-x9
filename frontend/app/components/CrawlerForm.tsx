@@ -12,22 +12,28 @@ type Props = {
     timeoutLabel: string;
     emailLabel: string;
     emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
     messageLabel: string;
     messagePlaceholder: string;
     helper: string;
     submit: string;
+    invalidPassword: string;
+    submitError: string;
   };
   timeoutOptions: { label: string; value: string }[];
 };
 
 export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
     setLoading(true);
+    setError(null);
 
     const formData = new FormData(event.currentTarget);
     const payload = {
@@ -35,7 +41,8 @@ export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
       match: String(formData.get("match") || ""),
       interval_hours: Number(formData.get("timeout") || 1),
       email_to: String(formData.get("email") || ""),
-      email_message: String(formData.get("subject") || "")
+      email_message: String(formData.get("subject") || ""),
+      access_password: String(formData.get("password") || "")
     };
 
     const resp = await fetch(`${apiBase}/monitor`, {
@@ -45,6 +52,11 @@ export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
     });
 
     if (!resp.ok) {
+      if (resp.status === 401) {
+        setError(labels.invalidPassword);
+      } else {
+        setError(labels.submitError);
+      }
       setLoading(false);
       return;
     }
@@ -120,6 +132,22 @@ export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
         </div>
 
         <div className="form-field">
+          <label className="label" htmlFor="password">
+            {labels.passwordLabel}
+          </label>
+          <input
+            id="password"
+            name="password"
+            placeholder={labels.passwordPlaceholder}
+            className="input"
+            type="password"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="form-field">
           <label className="label" htmlFor="subject">
             {labels.messageLabel}
           </label>
@@ -139,6 +167,11 @@ export default function CrawlerForm({ locale, labels, timeoutOptions }: Props) {
           {loading ? "..." : labels.submit}
         </button>
       </div>
+      {error ? (
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-100">
+          {error}
+        </div>
+      ) : null}
     </form>
   );
 }
