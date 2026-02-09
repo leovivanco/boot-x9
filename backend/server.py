@@ -10,9 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, constr, conint, field_validator
 
-from .crawler import check_page
-from .db import get_monitor_by_id, init_db, upsert_monitor
-from .notifier import send_email_smtp
+from crawler import check_page
+from db import get_monitor_by_id, init_db, upsert_monitor
+from notifier import send_email_smtp
 
 load_dotenv()
 
